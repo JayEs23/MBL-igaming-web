@@ -1,7 +1,7 @@
 // API Configuration
 export const API_CONFIG = {
-  // Backend API base URL - change this to match your backend
-  BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:4000',
+  // Backend API base URL - production URL with localhost fallback for development
+  BASE_URL: import.meta.env.VITE_API_URL || 'https://mbl-igaming.onrender.com',
   
   // API endpoints
   ENDPOINTS: {

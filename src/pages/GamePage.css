@@ -1,0 +1,625 @@
+.game-page {
+  height: 100vh;
+  max-height: 100vh;
+  background: #f8f9fa;
+  padding: 16px 20px;
+  color: #212529;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.countdown-section {
+  text-align: center;
+  margin-bottom: 24px;
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #dee2e6;
+  min-width: 300px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.countdown-section h2 {
+  font-size: 1.25rem;
+  font-weight: 500;
+  color: #495057;
+  margin-bottom: 16px;
+  margin-top: 0;
+}
+
+.session-timing {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+}
+
+.time-info {
+  margin: 6px 0;
+  font-size: 0.85rem;
+  color: #6c757d;
+}
+
+.time-info strong {
+  color: #495057;
+}
+
+.countdown-timer {
+  margin: 16px 0;
+}
+
+.countdown-timer h3 {
+  font-size: 2rem;
+  font-weight: 600;
+  color: #dc3545;
+  margin: 0;
+  font-family: 'Courier New', monospace;
+}
+
+.game-instruction {
+  font-size: 1rem;
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 14px 18px;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  max-width: 380px;
+  color: #495057;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.number-input {
+  width: 160px;
+  padding: 10px 14px;
+  font-size: 1.1rem;
+  text-align: center;
+  border: 2px solid #ced4da;
+  border-radius: 6px;
+  background: white;
+  color: #495057;
+  margin-bottom: 14px;
+  font-family: 'Courier New', monospace;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.number-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.number-input::placeholder {
+  color: #adb5bd;
+}
+
+.join-session-btn {
+  background: #007bff;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 400;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out, transform 0.1s ease-in-out;
+  text-transform: none;
+  letter-spacing: normal;
+  margin-bottom: 20px;
+}
+
+.join-session-btn:hover:not(:disabled) {
+  background: #0056b3;
+  transform: translateY(-1px);
+}
+
+.join-session-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.joined-status {
+  text-align: center;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #d1ecf1;
+  border-radius: 8px;
+  border: 1px solid #bee5eb;
+  color: #0c5460;
+}
+
+.success-message {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.your-pick {
+  font-size: 0.9rem;
+  margin-bottom: 14px;
+}
+
+.leave-session-btn {
+  background: #6c757d;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 400;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.leave-session-btn:hover {
+  background: #5a6268;
+}
+
+.error-message {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 10px 14px;
+  border-radius: 6px;
+  border: 1px solid #f5c6cb;
+  margin-bottom: 14px;
+  text-align: center;
+  font-weight: 400;
+  font-size: 0.85rem;
+}
+
+.session-info {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  border: 1px solid #dee2e6;
+  min-width: 340px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.users-joined {
+  text-align: center;
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: 14px;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
+  color: #495057;
+}
+
+.players-list h4 {
+  text-align: center;
+  margin-bottom: 14px;
+  font-size: 1rem;
+  color: #495057;
+  font-weight: 500;
+}
+
+.players-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+}
+
+.player-item {
+  background: white;
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+  border: 1px solid #e9ecef;
+  position: relative;
+  transition: transform 0.1s ease-in-out;
+}
+
+.player-item:hover {
+  transform: translateY(-1px);
+}
+
+.player-name {
+  font-weight: 400;
+  color: #495057;
+  font-size: 0.85rem;
+}
+
+.winner-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  font-size: 0.9rem;
+}
+
+.you-badge {
+  font-size: 0.7rem;
+  color: #6c757d;
+  font-weight: 400;
+  margin-left: 6px;
+  font-style: italic;
+}
+
+.game-actions {
+  display: flex;
+  gap: 14px;
+  margin-top: 16px;
+  justify-content: center;
+}
+
+.game-actions button {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 400;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out, transform 0.1s ease-in-out;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.results-btn {
+  background: #6c757d;
+  color: white;
+}
+
+.results-btn:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+.home-btn {
+  background: #6c757d;
+  color: white;
+}
+
+.home-btn:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+/* Results Display Styles */
+.results-display {
+  text-align: center;
+  padding: 32px 24px;
+  max-width: 600px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.results-display h2 {
+  color: #495057;
+  margin-bottom: 24px;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.winning-number-result {
+  margin-bottom: 24px;
+}
+
+.winning-number-result h3 {
+  font-size: 1.1rem;
+  color: #6c757d;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+.winner-number {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #28a745;
+  background: #f8f9fa;
+  border: 2px solid #28a745;
+  border-radius: 50%;
+  width: 100px;
+  height: 100px;
+  line-height: 100px;
+  margin: 16px auto;
+  text-align: center;
+  font-family: 'Courier New', monospace;
+}
+
+.user-result {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.user-result h3 {
+  font-size: 1.1rem;
+  color: #495057;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.user-result p {
+  margin: 8px 0;
+  color: #6c757d;
+}
+
+.winner-message {
+  color: #155724;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #d4edda;
+  border-radius: 6px;
+  border: 1px solid #c3e6cb;
+}
+
+.loser-message {
+  color: #721c24;
+  font-size: 1rem;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #f8d7da;
+  border-radius: 6px;
+  border: 1px solid #f5c6cb;
+}
+
+.winners-list {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+.winners-list h3 {
+  color: #495057;
+  margin-bottom: 16px;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.winners-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.winner-item {
+  padding: 8px 12px;
+  margin: 6px 0;
+  background: #d4edda;
+  border-radius: 6px;
+  color: #155724;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.session-stats {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #e9ecef;
+  border-radius: 6px;
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.session-stats p {
+  margin: 4px 0;
+}
+
+.results-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.results-actions button {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out, transform 0.1s ease-in-out;
+}
+
+.results-actions .home-btn {
+  background: #6c757d;
+  color: white;
+}
+
+.results-actions .home-btn:hover {
+  background: #5a6268;
+  transform: translateY(-1px);
+}
+
+.results-actions .leaderboard-btn {
+  background: #17a2b8;
+  color: white;
+}
+
+.results-actions .leaderboard-btn:hover {
+  background: #138496;
+  transform: translateY(-1px);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .game-page {
+    padding: 20px 16px;
+  }
+  
+  .countdown-section {
+    min-width: 280px;
+    padding: 20px;
+  }
+  
+  .countdown-section h2 {
+    font-size: 1.25rem;
+  }
+  
+  .countdown-timer h3 {
+    font-size: 2rem;
+  }
+  
+  .game-instruction {
+    font-size: 1rem;
+    padding: 16px;
+    max-width: 100%;
+  }
+  
+  .number-input {
+    width: 160px;
+    font-size: 1.1rem;
+  }
+  
+  .session-info {
+    min-width: 280px;
+    padding: 20px;
+  }
+  
+  .game-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .results-display {
+    padding: 24px 16px;
+  }
+  
+  .results-display h2 {
+    font-size: 1.5rem;
+  }
+  
+  .winner-number {
+    font-size: 2.5rem;
+    width: 80px;
+    height: 80px;
+    line-height: 80px;
+  }
+  
+  .results-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+.no-winner-number {
+  font-size: 1.2rem;
+  color: #6c757d;
+  background: #f8f9fa;
+  border: 2px solid #6c757d;
+  border-radius: 50%;
+  width: 100px;
+  height: 100px;
+  line-height: 100px;
+  margin: 16px auto;
+  text-align: center;
+  font-weight: 500;
+}
+
+.no-winner-message {
+  color: #6c757d;
+  font-size: 1rem;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: #e9ecef;
+  border-radius: 6px;
+  border: 1px solid #dee2e6;
+}
+
+/* Loading Animation Styles */
+.results-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+}
+
+.loading-animation {
+  text-align: center;
+  background: white;
+  border-radius: 12px;
+  padding: 40px;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  max-width: 500px;
+}
+
+.loading-animation h2 {
+  color: #495057;
+  margin-bottom: 16px;
+  font-size: 1.8rem;
+}
+
+.loading-animation p {
+  color: #6c757d;
+  margin-bottom: 24px;
+  font-size: 1.1rem;
+}
+
+.spinner {
+  width: 60px;
+  height: 60px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 24px;
+}
+
+.loading-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 20px 0;
+}
+
+.loading-dots span {
+  width: 12px;
+  height: 12px;
+  background: #007bff;
+  border-radius: 50%;
+  animation: bounce 1.4s ease-in-out infinite both;
+}
+
+.loading-dots span:nth-child(1) {
+  animation-delay: -0.32s;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: -0.16s;
+}
+
+.loading-dots span:nth-child(3) {
+  animation-delay: 0s;
+}
+
+.loading-message {
+  color: #495057;
+  font-weight: 500;
+  margin-top: 20px;
+  font-size: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes bounce {
+  0%, 80%, 100% {
+    transform: scale(0);
+  }
+  40% {
+    transform: scale(1);
+  }
+}

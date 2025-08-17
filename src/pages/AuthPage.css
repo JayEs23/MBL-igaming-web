@@ -1,0 +1,156 @@
+.auth-page {
+  height: 100vh;
+  max-height: 100vh;
+  background: #f8f9fa;
+  padding: 16px 20px;
+  color: #212529;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.auth-container {
+  background: #f8f9fa;
+  border-radius: 16px;
+  padding: 50px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  max-width: 450px;
+  width: 100%;
+  border: 1px solid #e9ecef;
+}
+
+.auth-container h1 {
+  margin-bottom: 40px;
+  color: #333;
+  font-size: 2.2rem;
+  font-weight: 700;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.auth-form input {
+  padding: 18px 20px;
+  border: 2px solid #dee2e6;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  text-align: center;
+  background: #fff;
+  color: #333;
+  transition: all 0.3s ease;
+}
+
+.auth-form input:focus {
+  outline: none;
+  border-color: #333;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.auth-form input::placeholder {
+  color: #adb5bd;
+}
+
+.auth-form input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.auth-buttons button {
+  flex: 1;
+  padding: 18px 20px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.register-btn {
+  background: black;
+  color: white;
+}
+
+.register-btn:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+}
+
+.login-btn {
+  background: #6c757d;
+  color: white;
+}
+
+.login-btn:hover:not(:disabled) {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(108, 117, 125, 0.2);
+}
+
+.switch-btn {
+  background: #fff;
+  color: #333;
+  border: 2px solid #dee2e6;
+}
+
+.switch-btn:hover:not(:disabled) {
+  background: #f8f9fa;
+  border-color: #adb5bd;
+  transform: translateY(-2px);
+}
+
+.auth-buttons button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .auth-container {
+    padding: 40px 30px;
+    max-width: 100%;
+    margin: 0 20px;
+  }
+  
+  .auth-container h1 {
+    font-size: 1.8rem;
+    margin-bottom: 30px;
+  }
+  
+  .auth-form {
+    gap: 20px;
+  }
+  
+  .auth-form input {
+    padding: 16px 18px;
+    font-size: 1rem;
+  }
+  
+  .auth-buttons {
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .auth-buttons button {
+    padding: 16px 18px;
+    font-size: 1rem;
+  }
+} 

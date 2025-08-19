@@ -19,16 +19,12 @@ export const API_CONFIG = {
       ACTIVE: '/sessions/active',
       ENDED: '/sessions/ended',
       ENDED_BY_ID: '/sessions/ended/:id',
-      RESULTS_BY_ID: '/sessions/results/:id'
+      RESULTS_BY_ID: '/sessions/results/:id',
+      JOINABLE: '/sessions/joinable'
     },
     LEADERBOARD: {
       TOP: '/leaderboard',
       BY_PERIOD: '/leaderboard/by-period'
-    },
-    GAME: {
-      PICK_NUMBER: '/game/pick',
-      SESSION_STATUS: '/game/session-status',
-      PLAYER_QUEUE: '/game/player-queue'
     }
   }
 };

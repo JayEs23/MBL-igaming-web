@@ -19,10 +19,10 @@ const Layout = () => {
   return (
     <div className="layout">
       <header className="header">
-        <div className="logo">🎮 MBL iGaming</div>
+        <div className="logo">MBL iGaming</div>
         <div className="user-info">
-          <span className="username">Hi {user?.username}</span>
-          <button className="logout-btn" onClick={handleLogout}>
+          <div className="username">Hi {user?.username}</div>
+          <button className="btn btn-danger btn-sm" onClick={handleLogout}>
             Logout
           </button>
         </div>

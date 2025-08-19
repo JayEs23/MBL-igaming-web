@@ -8,6 +8,7 @@ import LeaderboardPage from './pages/LeaderboardPage';
 import Layout from './components/Layout';
 import { AuthContext } from './contexts/AuthContext';
 import { SessionContext } from './contexts/SessionContext';
+import { AlertProvider } from './contexts/AlertContext';
 import type { User, Session } from './types';
 import './App.css';
 
@@ -53,29 +54,31 @@ function App() {
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, login, logout }}>
-      <SessionContext.Provider value={{ currentSession, updateSession }}>
-        <Router>
-          <div className="App">
-            <Routes>
-              <Route 
-                path="/auth" 
-                element={token && user ? <Navigate to="/" replace /> : <AuthPage />} 
-              />
-              <Route 
-                path="/" 
-                element={token && user ? <Layout /> : <Navigate to="/auth" replace />} 
-              >
-                <Route index element={<HomePage />} />
-                <Route path="game" element={<GamePage />} />
-                <Route path="results" element={<ResultsPage />} />
-                <Route path="leaderboard" element={<LeaderboardPage />} />
-              </Route>
-            </Routes>
-          </div>
-        </Router>
-      </SessionContext.Provider>
-    </AuthContext.Provider>
+    <AlertProvider>
+      <AuthContext.Provider value={{ token, user, login, logout }}>
+        <SessionContext.Provider value={{ currentSession, updateSession }}>
+          <Router>
+            <div className="App">
+              <Routes>
+                <Route 
+                  path="/auth" 
+                  element={token && user ? <Navigate to="/" replace /> : <AuthPage />} 
+                />
+                <Route 
+                  path="/" 
+                  element={token && user ? <Layout /> : <Navigate to="/auth" replace />} 
+                >
+                  <Route index element={<HomePage />} />
+                  <Route path="game" element={<GamePage />} />
+                  <Route path="results" element={<ResultsPage />} />
+                  <Route path="leaderboard" element={<LeaderboardPage />} />
+                </Route>
+              </Routes>
+            </div>
+          </Router>
+        </SessionContext.Provider>
+      </AuthContext.Provider>
+    </AlertProvider>
   );
 }
 

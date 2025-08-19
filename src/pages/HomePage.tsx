@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useSession } from '../contexts/SessionContext';
+import { useAlert } from '../contexts/AlertContext';
 import { GameService } from '../services/gameService';
 import { GAME_CONSTANTS } from '../types';
 import type { Session } from '../types';
@@ -10,8 +11,8 @@ import './HomePage.css';
 const HomePage = () => {
   const { user } = useAuth();
   const { currentSession, updateSession } = useSession();
+  const { showSuccess, showError, showInfo } = useAlert();
   const navigate = useNavigate();
-  const [sessionStatus, setSessionStatus] = useState('');
   const [canJoin, setCanJoin] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -22,7 +23,7 @@ const HomePage = () => {
     userWon: boolean;
     totalPlayers: number;
   } | null>(null);
-  const [countdownTime, setCountdownTime] = useState<number>(0);
+  const [joinReason, setJoinReason] = useState<string>('');
 
   useEffect(() => {
     loadCurrentSession();
@@ -30,6 +31,19 @@ const HomePage = () => {
     const interval = setInterval(loadCurrentSession, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  // Check session joinability
+  const checkSessionJoinability = async () => {
+    try {
+      const response = await GameService.checkSessionJoinability();
+      setCanJoin(response.joinable);
+      setJoinReason(response.reason);
+    } catch (error) {
+      console.error('Error checking session joinability:', error);
+      setCanJoin(false);
+      setJoinReason('Unable to check session status');
+    }
+  };
 
   // Separate effect for local countdown updates (no backend calls)
   useEffect(() => {
@@ -93,7 +107,7 @@ const HomePage = () => {
       const now = new Date();
       const timeUntilAutoStart = Math.max(0, Math.floor((autoStartTime.getTime() - now.getTime()) / 1000));
       
-      setCountdownTime(timeUntilAutoStart);
+      // setCountdownTime(timeUntilAutoStart); // This line is removed
       
       if (timeUntilAutoStart <= 0) {
         clearInterval(countdownInterval);
@@ -106,59 +120,71 @@ const HomePage = () => {
   const loadCurrentSession = async () => {
     try {
       const session = await GameService.getCurrentSession();
-      
       updateSession(session);
+      
+      if (session) {
       updateSessionStatus(session);
       updateCanJoinStatus(session);
+        // Also check joinability from backend
+        await checkSessionJoinability();
+      } else {
+        // setSessionStatus('No active session'); // This line is removed
+        setCanJoin(false);
+        setJoinReason('No session available');
+      }
     } catch (error) {
-      console.error('Error loading session:', error);
+      console.error('Error loading current session:', error);
+      showError('Error loading session data. Please refresh the page.');
+      // setSessionStatus('Error loading session'); // This line is removed
+      setCanJoin(false);
+      setJoinReason('Error loading session');
     }
   };
 
   const updateSessionStatus = (session: Session | null) => {
     if (!session) {
-      setSessionStatus('No active session available');
+      // setSessionStatus('No active session available'); // This line is removed
       return;
     }
 
     if (session.status === 'ACTIVE') {
-      const timeLeft = GameService.getSessionCountdown(session);
-      
       if (session.startedAt && session.endsAt) {
-        const startTime = new Date(session.startedAt).toLocaleTimeString();
-        const endTime = new Date(session.endsAt).toLocaleTimeString();
+        // const startTime = new Date(session.startedAt).toLocaleTimeString();
+        // const endTime = new Date(session.endsAt).toLocaleTimeString();
+        const timeLeft = GameService.getSessionCountdown(session);
         
         if (timeLeft > 0) {
-          setSessionStatus(`Active session started at ${startTime}, ends at ${endTime} (${timeLeft}s remaining)`);
+          // setSessionStatus(`Active session started at ${startTime}, ends at ${endTime} (${timeLeft}s remaining)`); // This line is removed
         } else {
-          setSessionStatus(`Session ended at ${endTime}`);
+          // setSessionStatus(`Session ended at ${endTime}`); // This line is removed
         }
       } else {
+        const timeLeft = GameService.getSessionCountdown(session);
         if (timeLeft > 0) {
-          setSessionStatus(`Active session - ${timeLeft}s remaining`);
+          // setSessionStatus(`Active session - ${timeLeft}s remaining`); // This line is removed
         } else {
-          setSessionStatus('Session ending...');
+          // setSessionStatus('Session ending...'); // This line is removed
         }
       }
     } else if (session.status === 'PENDING') {
       if (session.startedAt) {
-        const startTime = new Date(session.startedAt).toLocaleTimeString();
-        setSessionStatus(`Next session will start at ${startTime}`);
+        // const startTime = new Date(session.startedAt).toLocaleTimeString();
+        // setSessionStatus(`Next session will start at ${startTime}`); // This line is removed
       } else {
         // Calculate when session will auto-start (30 seconds after creation)
         const createdAt = new Date(session.createdAt);
-        const autoStartTime = new Date(createdAt.getTime() + 30000);
+        const autoStartTime = new Date(createdAt.getTime() + 30 * 1000); // 30 seconds
         const now = new Date();
         const timeUntilAutoStart = Math.max(0, Math.floor((autoStartTime.getTime() - now.getTime()) / 1000));
         
         if (timeUntilAutoStart > 0) {
-          setSessionStatus(`⏰ Session will auto-start in ${timeUntilAutoStart} seconds ⏰`);
+          // setSessionStatus(`⏰ Session will auto-start in ${timeUntilAutoStart} seconds ⏰`); // This line is removed
         } else {
-          setSessionStatus('🚀 Session will auto-start soon...');
+          // setSessionStatus('🚀 Session will auto-start soon...'); // This line is removed
         }
       }
     } else {
-      setSessionStatus('Session has ended');
+      // setSessionStatus('Session has ended'); // This line is removed
     }
   };
 
@@ -270,11 +296,15 @@ const HomePage = () => {
   };
 
   const handleJoinGame = async () => {
-    if (!canJoin || !currentSession) return;
+    if (!canJoin || !currentSession) {
+      showError('Cannot join session at this time');
+      return;
+    }
 
     setIsLoading(true);
     try {
       // Frontend already validated canJoin status, proceed directly to game
+      showInfo('Joining game session...');
       navigate('/game');
       
       // Refresh session data after navigation
@@ -283,7 +313,7 @@ const HomePage = () => {
       }, 100);
     } catch (error) {
       console.error('Error joining game:', error);
-      setSessionStatus('Error joining game. Please try again.');
+      showError('Error joining game. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -302,17 +332,21 @@ const HomePage = () => {
   };
 
   const handleStartSession = async () => {
-    if (!currentSession || currentSession.status !== 'PENDING') return;
+    if (!currentSession || currentSession.status !== 'PENDING') {
+      showError('Cannot start session. No pending session available.');
+      return;
+    }
 
     setIsLoading(true);
     try {
       await GameService.startSession(currentSession.id);
+      showSuccess('Session started successfully! Players can now join.');
       updateSessionStatus(currentSession); // Update status to reflect start
       updateCanJoinStatus(currentSession); // Re-evaluate joinability
-      setSessionStatus('Session started. Players can join.');
+      // setSessionStatus('Session started. Players can join.'); // This line is removed
     } catch (error) {
       console.error('Error starting session:', error);
-      setSessionStatus('Error starting session. Please try again.');
+      showError('Error starting session. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -371,184 +405,207 @@ const HomePage = () => {
           <div className="help-modal" onClick={(e) => e.stopPropagation()}>
             <div className="help-header">
               <h2>🎮 Game Rules</h2>
-              <button className="help-close-btn" onClick={toggleHelp}>×</button>
+              <button className="help-close" onClick={toggleHelp}>×</button>
             </div>
-            <div className="help-content">
-              <div className="rule-section">
+            
+            <div className="help-section">
                 <h3>How to Play</h3>
                 <ol>
-                  <li><strong>Join a Session:</strong> Click the "JOIN" button when a session is available</li>
+                <li><strong>Join a Session:</strong> Click the "Join Game" button when a session is available</li>
                   <li><strong>Pick a Number:</strong> Choose a number between 1-9 when joining</li>
                   <li><strong>Wait for Results:</strong> The session runs for a fixed duration (configurable)</li>
                   <li><strong>Win Condition:</strong> If your number matches the randomly generated winning number, you win!</li>
                 </ol>
               </div>
               
-              <div className="rule-section">
+            <div className="help-section">
                 <h3>Session Rules</h3>
                 <ul>
                   <li>Maximum 10 players per session</li>
                   <li>You can leave a session before it starts</li>
                   <li>If you leave, the first person in queue takes your place</li>
                   <li>You cannot join if you already have an active session</li>
-                  <li>Sessions auto-start after 5 seconds or manually with "START SESSION"</li>
+                <li>Sessions auto-start after 5 seconds or manually with "Start Session"</li>
                 </ul>
               </div>
               
-              <div className="rule-section">
+            <div className="help-section">
                 <h3>Scoring</h3>
                 <ul>
                   <li>Each win adds 1 point to your total wins</li>
                   <li>Check the leaderboard to see top players</li>
                   <li>Winners are determined at the end of each session</li>
                 </ul>
-              </div>
             </div>
           </div>
         </div>
       )}
       
+      {/* Main Content */}
       <div className="page-header">
         <div className="header-left">
-          <span className="game-icon">🎮</span>
+          <div className="game-icon">🎮</div>
           <h1>MBL iGaming</h1>
         </div>
         <div className="header-right">
-          <span className="user-greeting">Hi {user?.fullName || user?.username}</span>
-          <button className="help-btn" onClick={toggleHelp}>❓ Help</button>
+          <div className="user-greeting">Hi {user?.fullName || user?.username}</div>
+          <button className="btn btn-info btn-sm" onClick={toggleHelp}>
+            ❓ Help
+          </button>
         </div>
       </div>
 
       <div className="home-top-section">
         <div className="stats-row">
           <div className="stat-item">
-            <div className="stat-value">{user?.wins || 0}</div>
+            <div className="stat-value">0</div>
             <div className="stat-label">Total Wins</div>
           </div>
           <div className="stat-item">
-            <div className="stat-value">{currentSession?.players?.length || 0}</div>
+            <div className="stat-value">0</div>
             <div className="stat-label">Players in Session</div>
           </div>
           <div className="stat-item">
-            <div className="stat-value">{GAME_CONSTANTS.MAX_PLAYERS}</div>
+            <div className="stat-value">10</div>
             <div className="stat-label">Max Players</div>
-          </div>
-        </div>
-
-        <div className="home-controls">
-          <div className="action-buttons">
-            <button 
-              className="join-btn" 
-              onClick={handleJoinGame}
-              disabled={!canJoin || isLoading}
-            >
-              {isLoading ? 'JOINING...' : canJoin ? 'JOIN' : 'CANNOT JOIN'}
-            </button>
-            
-            <button 
-              className="results-btn" 
-              onClick={handleViewResults}
-              disabled={!currentSession}
-            >
-              VIEW RESULTS
-            </button>
-            
-            <button 
-              className="leaderboard-btn" 
-              onClick={handleViewLeaderboard}
-            >
-              LEADERBOARD
-            </button>
           </div>
         </div>
       </div>
 
-      <div className="session-info">
-        <h2>Current Session</h2>
+      <div className="session-section">
         {currentSession ? (
-          <div className="session-details">
-            <div className="session-status">
-              <strong>Status:</strong> {sessionStatus}
+          <div className="session-card">
+            <div className="session-header">
+              <div className="session-title">
+                🎯 Active Session
+                <span className={`session-status ${currentSession.status.toLowerCase()}`}>
+                  {currentSession.status}
+                </span>
+                </div>
             </div>
             
-            <div className="session-timing-row">
-              {currentSession.startedAt && (
-                <div className="session-time">
-                  <strong>Started:</strong> {new Date(currentSession.startedAt).toLocaleTimeString()}
-                </div>
-              )}
-              
-              {currentSession.endsAt && (
-                <div className="session-time">
-                  <strong>Ends:</strong> {new Date(currentSession.endsAt).toLocaleTimeString()}
-                </div>
-              )}
-              
-              {currentSession.startedAt && currentSession.endsAt && (
-                <div className="session-duration">
-                  <strong>Duration:</strong> {Math.round((new Date(currentSession.endsAt).getTime() - new Date(currentSession.startedAt).getTime()) / 1000)} seconds
-                </div>
-              )}
+            <div className="session-info">
+              <div className="info-item">
+                <div className="info-label">Status</div>
+                <div className="info-value">{currentSession.status}</div>
             </div>
-            
-            <div className="session-players">
-              <strong>Players:</strong> {currentSession.players?.length || 0} / {currentSession.maxPlayers || 10}
+              <div className="info-item">
+                <div className="info-label">Players</div>
+                <div className="info-value">{currentSession.players?.length || 0}/10</div>
+              </div>
+              <div className="info-item">
+                <div className="info-label">Queue</div>
+                <div className="info-value">{currentSession.queue?.length || 0}</div>
+              </div>
             </div>
-            
-            {/* Show countdown for pending sessions */}
-            {currentSession.status === 'PENDING' && !currentSession.startedAt && countdownTime > 0 && (
-              <div className="session-countdown">
-                <div className="countdown-display">
-                  <strong>⏰ Auto-start in:</strong>
-                  <span className="countdown-timer">{countdownTime}s</span>
-                </div>
+
+            {currentSession.status === 'ACTIVE' && currentSession.endsAt && (
+              <div className="countdown">
+                Time Remaining: {Math.max(0, GameService.getSessionCountdown(currentSession))}s
               </div>
-            )}
-            
-            {currentSession.startedBy && (
-              <div className="session-starter">
-                <strong>Started by:</strong> {currentSession.startedBy.fullName || currentSession.startedBy.username}
-              </div>
-            )}
-            
-            {currentSession.players && currentSession.players.length > 0 ? (
-              <div className="players-list">
-                <strong>Players in session:</strong>
-                <ul>
-                  {currentSession.players.map((player) => (
-                    <li key={player.id}>
-                      {player.user.fullName || player.user.username}
-                      {player.user.id === user?.id && ' (You)'}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <div className="no-players">No players have joined yet</div>
             )}
             
             <div className="session-actions">
-              <button 
-                className="refresh-btn" 
-                onClick={loadCurrentSession}
-                disabled={isLoading}
-              >
-                🔄 Refresh
-              </button>
-              
               {currentSession?.status === 'PENDING' && (
                 <button 
-                  className="start-btn" 
+                  className="btn btn-primary btn-lg"
                   onClick={handleStartSession}
                   disabled={isLoading}
                 >
-                  🚀 START SESSION
+                  {isLoading ? (
+                    <>
+                      <span className="spinner"></span>
+                      Starting Session...
+                    </>
+                  ) : (
+                    'Start Session'
+                  )}
+                </button>
+              )}
+              
+              {canJoin && currentSession?.status === 'ACTIVE' && (
+                <button 
+                  className="btn btn-success btn-lg"
+                  onClick={handleJoinGame}
+                  disabled={isLoading}
+                  title={joinReason}
+                >
+                  {isLoading ? (
+                    <>
+                      <span className="spinner"></span>
+                      Joining...
+                    </>
+                  ) : (
+                    'Join Game'
+                  )}
+                </button>
+              )}
+              
+              {!canJoin && currentSession?.status === 'ACTIVE' && (
+                <button 
+                  className="btn btn-secondary btn-lg"
+                  disabled={true}
+                  title={joinReason}
+                >
+                  Cannot Join
+                </button>
+              )}
+              
+              {currentSession?.status === 'ENDED' && (
+                <button 
+                  className="btn btn-outline btn-lg"
+                  onClick={handleViewResults}
+                >
+                  View Results
                 </button>
               )}
             </div>
+
+            {currentSession.players && currentSession.players.length > 0 && (
+              <div className="players-section">
+                <div className="players-header">
+                  <div className="players-title">Players in Session</div>
+                  <div className="players-count">{currentSession.players.length}</div>
+                </div>
+                <div className="players-grid">
+                  {currentSession.players.map((player, index) => (
+                    <div key={index} className="player-card">
+                      <div className="player-name">
+                        {player.user.fullName || player.user.username}
+                        {player.user.id === user?.id && ' (You)'}
+                      </div>
+                      {player.pick && <div className="player-pick">Picked: {player.pick}</div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {currentSession.queue && currentSession.queue.length > 0 && (
+              <div className="queue-section">
+                <div className="queue-header">
+                  <div className="queue-title">Waiting in Queue</div>
+                  <div className="queue-count">{currentSession.queue.length}</div>
+                </div>
+                <div className="queue-list">
+                  {currentSession.queue.map((queuedPlayer, index) => (
+                    <div key={index} className="queue-item">
+                      {queuedPlayer.user.fullName || queuedPlayer.user.username}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="no-session">No session available</div>
+          <div className="no-session">
+            <h3>No Active Session</h3>
+            <p>There are currently no active gaming sessions available.</p>
+            <p>Check back later or create a new session to start playing!</p>
+            <button className="btn btn-primary" onClick={handleViewLeaderboard}>
+              View Leaderboard
+            </button>
+          </div>
         )}
       </div>
     </div>

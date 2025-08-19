@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSession } from '../contexts/SessionContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useAlert } from '../contexts/AlertContext';
 import { GameService } from '../services/gameService';
 import { GAME_CONSTANTS } from '../types';
 import './GamePage.css';
@@ -9,6 +10,7 @@ import './GamePage.css';
 const GamePage = () => {
   const { currentSession } = useSession();
   const { user } = useAuth();
+  const { showSuccess, showError, showInfo } = useAlert();
   const navigate = useNavigate();
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [selectedNumber, setSelectedNumber] = useState<number | null>(null);
@@ -182,14 +184,14 @@ const GamePage = () => {
           
           <div className="results-actions">
             <button 
-              className="home-btn"
+              className="btn btn-primary"
               onClick={() => navigate('/')}
             >
               Back to Home
             </button>
             
             <button 
-              className="leaderboard-btn"
+              className="btn btn-outline"
               onClick={() => currentSession && navigate(`/results?sessionId=${currentSession.id}`)}
             >
               View Results
@@ -222,11 +224,14 @@ const GamePage = () => {
   }
 
   const handleNumberSubmit = async () => {
-    if (!selectedNumber || !currentSession || hasJoined) return;
+    if (!selectedNumber || !currentSession || hasJoined) {
+      showError('Cannot join session at this time');
+      return;
+    }
 
     // Validate number pick (1-9)
     if (!GameService.validatePick(selectedNumber)) {
-      setError('Please pick a number between 1 and 9');
+      showError('Please pick a number between 1 and 9');
       return;
     }
 
@@ -234,21 +239,25 @@ const GamePage = () => {
     setError(null);
 
     try {
+      showInfo('Joining session...');
       const result = await GameService.joinSession(selectedNumber);
       
       if (result.success) {
         setHasJoined(true);
         setError(null);
+        showSuccess('Successfully joined the session!');
         // Update the session context with the new session data
         if (result.session) {
           // You might want to update the session context here
         }
       } else {
         setError(result.message);
+        showError(result.message || 'Failed to join session');
       }
     } catch (error) {
       console.error('Error joining session:', error);
-      setError('Failed to join session. Please try again.');
+      setError('Error joining session. Please try again.');
+      showError('Error joining session. Please try again.');
     } finally {
       setIsJoining(false);
     }
@@ -319,13 +328,31 @@ const GamePage = () => {
             disabled={isJoining}
           />
           
+          <div className="game-actions">
           <button
-            className="join-session-btn"
+              className="btn btn-success btn-lg"
             onClick={handleNumberSubmit}
-            disabled={!selectedNumber || isJoining}
-          >
-            {isJoining ? 'Joining...' : 'Join Session'}
+              disabled={isJoining || hasJoined || !selectedNumber}
+            >
+              {isJoining ? (
+                <>
+                  <span className="spinner"></span>
+                  Joining...
+                </>
+              ) : hasJoined ? (
+                'Joined!'
+              ) : (
+                'Join Session'
+              )}
+            </button>
+            
+            <button 
+              className="btn btn-outline btn-lg"
+              onClick={() => navigate('/')}
+            >
+              Back to Home
           </button>
+          </div>
         </>
       )}
 
@@ -334,7 +361,7 @@ const GamePage = () => {
           <div className="success-message">✅ You've joined the session!</div>
           <div className="your-pick">Your pick: {selectedNumber}</div>
           <button
-            className="leave-session-btn"
+            className="btn btn-danger"
             onClick={handleLeaveSession}
           >
             Leave Session
@@ -373,14 +400,14 @@ const GamePage = () => {
 
       <div className="game-actions">
         <button 
-          className="results-btn"
+          className="btn btn-outline"
           onClick={() => navigate('/results')}
         >
           View Results
         </button>
         
         <button 
-          className="home-btn"
+          className="btn btn-primary"
           onClick={() => navigate('/')}
         >
           Back to Home

@@ -1,16 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useAlert } from '../contexts/AlertContext';
 import { buildApiUrl, API_CONFIG } from '../config/api';
 import type { ApiResponse, User } from '../types';
-import Notification from '../components/Notification';
 import './AuthPage.css';
-
-interface NotificationState {
-  message: string;
-  type: 'success' | 'error' | 'info';
-  isVisible: boolean;
-}
 
 interface AuthData {
   token: string;
@@ -22,29 +16,16 @@ const AuthPage = () => {
   const [fullName, setFullName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
-  const [notification, setNotification] = useState<NotificationState>({
-    message: '',
-    type: 'info',
-    isVisible: false
-  });
   const { login } = useAuth();
+  const { showSuccess, showError } = useAlert();
   const navigate = useNavigate();
-
-  const showNotification = (message: string, type: 'success' | 'error' | 'info') => {
-    setNotification({
-      message,
-      type,
-      isVisible: true
-    });
-  };
-
-  const hideNotification = () => {
-    setNotification(prev => ({ ...prev, isVisible: false }));
-  };
 
   const handleSubmit = async (e: React.FormEvent, action: 'login' | 'register') => {
     e.preventDefault();
-    if (!username.trim()) return;
+    if (!username.trim()) {
+      showError('Username is required');
+      return;
+    }
 
     setIsLoading(true);
 
@@ -60,22 +41,18 @@ const AuthPage = () => {
         body: JSON.stringify(requestBody)
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
       const responseText = await response.text();
       let data: ApiResponse<AuthData>;
 
       try {
         data = JSON.parse(responseText);
       } catch {
-        throw new Error(`Invalid JSON response: ${responseText}`);
+        throw new Error(`Invalid response from server`);
       }
 
       if (data.status === 'success') {
         if (action === 'register') {
-          showNotification('Registration successful! Welcome aboard!', 'success');
+          showSuccess('Registration successful! Welcome aboard!');
           setUsername('');
           setFullName('');
           // Registration successful, auto-login the user
@@ -83,15 +60,30 @@ const AuthPage = () => {
           navigate('/');
         } else {
           // Login successful
+          showSuccess('Login successful!');
           login(data.data.token, data.data.user);
           navigate('/');
         }
       } else {
-        showNotification(data.message || `Failed to ${action}`, 'error');
+        showError(data.message || `Failed to ${action}`);
       }
     } catch (error) {
       console.error(`Error during ${action}:`, error);
-      showNotification(error instanceof Error ? error.message : `Failed to ${action}`, 'error');
+      
+      // Handle specific error cases
+      if (error instanceof Error) {
+        if (error.message.includes('Invalid credentials')) {
+          showError('Invalid username. Please check your credentials.');
+        } else if (error.message.includes('Username already taken')) {
+          showError('Username is already taken. Please choose a different one.');
+        } else if (error.message.includes('User has an active session')) {
+          showError('You already have an active session. Please wait for it to end.');
+        } else {
+          showError(error.message);
+        }
+      } else {
+        showError(`Failed to ${action}. Please try again.`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -101,82 +93,89 @@ const AuthPage = () => {
     setIsRegistering(!isRegistering);
     setUsername('');
     setFullName('');
-    setNotification({ message: '', type: 'info', isVisible: false });
   };
 
   return (
     <div className="auth-page">
-      <Notification
-        message={notification.message}
-        type={notification.type}
-        isVisible={notification.isVisible}
-        onClose={hideNotification}
-        autoHide={true}
-        duration={notification.type === 'success' && isRegistering ? 2000 : 5000}
-      />
       <div className="auth-container">
-        <h1>Welcome to MBL iGaming</h1>
-        <form className="auth-form" onSubmit={(e) => e.preventDefault()}>
+        <div className="auth-header">
+          <h1>🎮 MBL iGaming</h1>
+          <p>Join the ultimate gaming experience</p>
+        </div>
+
+        <div className="auth-tabs">
+          <button 
+            className={`auth-tab ${!isRegistering ? 'active' : ''}`}
+            onClick={() => setIsRegistering(false)}
+          >
+            Sign In
+          </button>
+          <button 
+            className={`auth-tab ${isRegistering ? 'active' : ''}`}
+            onClick={() => setIsRegistering(true)}
+          >
+            Create Account
+          </button>
+        </div>
+
+        <form onSubmit={(e) => handleSubmit(e, isRegistering ? 'register' : 'login')} className="auth-form">
+          <div className="form-group">
+            <label htmlFor="username" className="form-label">Username</label>
           <input
+              id="username"
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="Enter your username"
+              className="form-input"
+              required
             disabled={isLoading}
           />
+          </div>
           
           {isRegistering && (
+            <div className="form-group">
+              <label htmlFor="fullName" className="form-label">Full Name (Optional)</label>
             <input
+                id="fullName"
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="Enter your full name (optional)"
+                placeholder="Enter your full name"
+                className="form-input"
               disabled={isLoading}
             />
+            </div>
           )}
           
-          <div className="auth-buttons">
-            {isRegistering ? (
-              <>
                 <button
-                  type="button"
-                  onClick={(e) => handleSubmit(e, 'register')}
-                  disabled={isLoading || !username.trim()}
-                  className="register-btn"
-                >
-                  Register
-                </button>
-                <button
-                  type="button"
-                  onClick={toggleMode}
+            type="submit" 
+            className={`btn btn-primary btn-full ${isLoading ? 'loading' : ''}`}
                   disabled={isLoading}
-                  className="switch-btn"
-                >
-                  Back to Login
-                </button>
+          >
+            {isLoading ? (
+              <>
+                <span className="spinner"></span>
+                {isRegistering ? 'Creating Account...' : 'Signing In...'}
               </>
             ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={(e) => handleSubmit(e, 'login')}
-                  disabled={isLoading || !username.trim()}
-                  className="login-btn"
-                >
-                  Login
-                </button>
-                <button
-                  type="button"
-                  onClick={toggleMode}
-                  disabled={isLoading}
-                  className="switch-btn"
-                >
-                  New User? Register
-                </button>
-              </>
+              isRegistering ? 'Create Account' : 'Sign In'
             )}
-          </div>
+                </button>
         </form>
+
+        <div className="auth-footer">
+          <p className="text-muted text-center">
+            {isRegistering ? 'Already have an account?' : "Don't have an account?"}
+                <button
+                  type="button"
+              className="link link-primary ml-2"
+                  onClick={toggleMode}
+                >
+              {isRegistering ? 'Sign In' : 'Create Account'}
+                </button>
+          </p>
+          </div>
       </div>
     </div>
   );

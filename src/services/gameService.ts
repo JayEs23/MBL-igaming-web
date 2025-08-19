@@ -251,6 +251,26 @@ export class GameService {
     }
   }
 
+  static async checkSessionJoinability() {
+    try {
+      const fullUrl = buildApiUrl(API_CONFIG.ENDPOINTS.SESSIONS.JOINABLE);
+      const response = await fetch(fullUrl, {
+        method: 'GET',
+        headers: getAuthHeaders(),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error('Error checking session joinability:', error);
+      throw error;
+    }
+  }
+
   // Get session countdown timer
   static getSessionCountdown(session: Session): number {
     if (!session.endsAt) return 0;

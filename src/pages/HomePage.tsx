@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useSession } from '../contexts/SessionContext';
@@ -24,122 +24,128 @@ const HomePage = () => {
     totalPlayers: number;
   } | null>(null);
   const [joinReason, setJoinReason] = useState<string>('');
+  const [countdown, setCountdown] = useState<number>(0);
 
-  useEffect(() => {
-    loadCurrentSession();
-    // Poll every 3 seconds instead of 5 seconds for more responsive updates
-    const interval = setInterval(loadCurrentSession, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Check session joinability
-  const checkSessionJoinability = async () => {
-    try {
-      const response = await GameService.checkSessionJoinability();
-      setCanJoin(response.joinable);
-      setJoinReason(response.reason);
-    } catch (error) {
-      console.error('Error checking session joinability:', error);
-      setCanJoin(false);
-      setJoinReason('Unable to check session status');
-    }
-  };
-
-  // Separate effect for local countdown updates (no backend calls)
-  useEffect(() => {
-    if (!currentSession || currentSession.status !== 'ACTIVE') return;
-    
-    const countdownInterval = setInterval(() => {
-      if (currentSession) {
-        updateSessionStatus(currentSession);
-        updateCanJoinStatus(currentSession);
-        
-        // Check if session just ended
-        const timeLeft = GameService.getSessionCountdown(currentSession);
-        if (timeLeft <= 0 && !showResults) {
-          showSessionResultsNotification(currentSession).catch(error => {
-            console.error('Error showing session results notification:', error);
-          });
-        }
-      }
-    }, 1000);
-    
-    return () => clearInterval(countdownInterval);
-  }, [currentSession, showResults]);
-
-  // Separate effect for auto-start countdown
-  useEffect(() => {
-    if (!currentSession || currentSession.status !== 'PENDING') return;
-    
-    const autoStartInterval = setInterval(() => {
-      if (currentSession && currentSession.status === 'PENDING') {
-        updateSessionStatus(currentSession);
-      }
-    }, 1000);
-    
-    return () => clearInterval(autoStartInterval);
-  }, [currentSession]);
-
-  // Effect to refresh session data when player count changes
-  useEffect(() => {
-    if (!currentSession) return;
-    
-    // Refresh session data when player count changes to ensure real-time updates
-    const sessionId = currentSession.id;
-    
-    const refreshInterval = setInterval(() => {
-      // Only refresh if we're still on the same session
-      if (currentSession && currentSession.id === sessionId) {
-        loadCurrentSession();
-      }
-    }, 2000); // Refresh every 2 seconds when session is active
-    
-    return () => clearInterval(refreshInterval);
-  }, [currentSession?.id, currentSession?.players?.length]);
-
-  // Effect to update countdown timer for pending sessions
-  useEffect(() => {
-    if (!currentSession || currentSession.status !== 'PENDING' || currentSession.startedAt) return;
-    
-    const countdownInterval = setInterval(() => {
-      const createdAt = new Date(currentSession.createdAt);
-      const autoStartTime = new Date(createdAt.getTime() + 30000);
-      const now = new Date();
-      const timeUntilAutoStart = Math.max(0, Math.floor((autoStartTime.getTime() - now.getTime()) / 1000));
-      
-      // setCountdownTime(timeUntilAutoStart); // This line is removed
-      
-      if (timeUntilAutoStart <= 0) {
-        clearInterval(countdownInterval);
-      }
-    }, 1000);
-    
-    return () => clearInterval(countdownInterval);
-  }, [currentSession?.id, currentSession?.status, currentSession?.startedAt, currentSession?.createdAt]);
-
-  const loadCurrentSession = async () => {
+  // Load current session once on mount
+  const loadCurrentSession = useCallback(async () => {
     try {
       const session = await GameService.getCurrentSession();
       updateSession(session);
       
       if (session) {
-      updateSessionStatus(session);
-      updateCanJoinStatus(session);
-        // Also check joinability from backend
-        await checkSessionJoinability();
+        updateSessionStatus(session);
+        updateCanJoinStatus(session);
+        updateCountdown(session);
       } else {
-        // setSessionStatus('No active session'); // This line is removed
         setCanJoin(false);
         setJoinReason('No session available');
+        setCountdown(0);
       }
     } catch (error) {
       console.error('Error loading current session:', error);
       showError('Error loading session data. Please refresh the page.');
-      // setSessionStatus('Error loading session'); // This line is removed
       setCanJoin(false);
       setJoinReason('Error loading session');
+      setCountdown(0);
     }
-  };
+  }, [updateSession, showError]);
+
+  // Load session once on mount
+  useEffect(() => {
+    loadCurrentSession();
+  }, [loadCurrentSession]);
+
+  // Update countdown locally without API calls
+  const updateCountdown = useCallback((session: Session | null) => {
+    if (!session || session.status !== 'ACTIVE') {
+      setCountdown(0);
+      return;
+    }
+    
+    const timeLeft = GameService.getSessionCountdown(session);
+    setCountdown(timeLeft);
+    
+    // If session just ended, check for results
+    if (timeLeft <= 0 && !showResults) {
+      checkForResults(session);
+    }
+  }, [showResults]);
+
+  // No automatic polling - countdown updates only when manually refreshed
+
+  // Optimized join status update with state comparison to prevent flickering
+  const updateCanJoinStatus = useCallback((session: Session | null) => {
+    if (!session) {
+      setCanJoin(prev => prev !== false ? false : prev);
+      return;
+    }
+
+    // Check if user is already in the session
+    const isUserInSession = session.players?.some(player => player.user.id === user?.id);
+    
+    if (isUserInSession) {
+      setCanJoin(prev => prev !== false ? false : prev);
+      return;
+    }
+
+    // Check session status and timing
+    if (session.status === 'PENDING') {
+      setCanJoin(prev => prev !== true ? true : prev);
+      return;
+    }
+
+    if (session.status === 'ACTIVE') {
+      if (countdown > 0) {
+        // Check if session is full (max 10 players)
+        const currentPlayers = session.players?.length || 0;
+        
+        if (currentPlayers >= GAME_CONSTANTS.MAX_PLAYERS) {
+          setCanJoin(prev => prev !== false ? false : prev);
+          return;
+        }
+        
+        setCanJoin(prev => prev !== true ? true : prev);
+      } else {
+        setCanJoin(prev => prev !== false ? false : prev);
+      }
+      return;
+    }
+
+    // Session has ended or other status
+    setCanJoin(prev => prev !== false ? false : prev);
+  }, [user?.id, countdown]);
+
+  // Check for results after session ends
+  const checkForResults = useCallback(async (session: Session) => {
+    try {
+      // Wait a moment for backend to process results
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const endedSession = await GameService.getEndedSessionResults(session.id);
+      
+      if (endedSession && endedSession.winnerNumber) {
+        const winners = endedSession.players.filter(player => player.pick === endedSession.winnerNumber);
+        const userWon = winners.some(winner => winner.user.id === user?.id);
+        
+        setLastSessionResults({
+          winningNumber: endedSession.winnerNumber,
+          winners: winners,
+          userWon: userWon,
+          totalPlayers: endedSession.players.length
+        });
+        
+        setShowResults(true);
+        
+        // Auto-hide after 10 seconds
+        setTimeout(() => {
+          setShowResults(false);
+          setLastSessionResults(null);
+        }, 10000);
+      }
+    } catch (error) {
+      console.error('Error checking for results:', error);
+    }
+  }, [user?.id]);
 
   const updateSessionStatus = (session: Session | null) => {
     if (!session) {
@@ -151,16 +157,16 @@ const HomePage = () => {
       if (session.startedAt && session.endsAt) {
         // const startTime = new Date(session.startedAt).toLocaleTimeString();
         // const endTime = new Date(session.endsAt).toLocaleTimeString();
-        const timeLeft = GameService.getSessionCountdown(session);
+        // const timeLeft = GameService.getSessionCountdown(session);
         
-        if (timeLeft > 0) {
+        if (countdown > 0) {
           // setSessionStatus(`Active session started at ${startTime}, ends at ${endTime} (${timeLeft}s remaining)`); // This line is removed
         } else {
           // setSessionStatus(`Session ended at ${endTime}`); // This line is removed
         }
       } else {
-        const timeLeft = GameService.getSessionCountdown(session);
-        if (timeLeft > 0) {
+        // const timeLeft = GameService.getSessionCountdown(session);
+        if (countdown > 0) {
           // setSessionStatus(`Active session - ${timeLeft}s remaining`); // This line is removed
         } else {
           // setSessionStatus('Session ending...'); // This line is removed
@@ -188,113 +194,6 @@ const HomePage = () => {
     }
   };
 
-  const updateCanJoinStatus = (session: Session | null) => {
-    if (!session) {
-      setCanJoin(false);
-      return;
-    }
-
-    // Check if user is already in the session
-    const isUserInSession = session.players?.some(player => player.user.id === user?.id);
-    
-    if (isUserInSession) {
-      setCanJoin(false);
-      return;
-    }
-
-    // Check session status and timing
-    if (session.status === 'PENDING') {
-      setCanJoin(true);
-      return;
-    }
-
-    if (session.status === 'ACTIVE') {
-      const timeLeft = GameService.getSessionCountdown(session);
-      
-      if (timeLeft > 0) {
-        // Check if session is full (max 10 players)
-        const currentPlayers = session.players?.length || 0;
-        
-        if (currentPlayers >= GAME_CONSTANTS.MAX_PLAYERS) {
-          setCanJoin(false);
-          return;
-        }
-        
-        setCanJoin(true);
-      } else {
-        setCanJoin(false);
-      }
-      return;
-    }
-
-    // Session has ended or other status
-    setCanJoin(false);
-  };
-
-  const showSessionResultsNotification = async (session: Session) => {
-    try {
-      // Fetch the actual ended session results from the backend
-      const endedSession = await GameService.getEndedSessionResults(session.id);
-      
-      if (endedSession && endedSession.winnerNumber) {
-        // Use the actual ended session data from the backend
-        const winners = endedSession.players.filter(player => player.pick === endedSession.winnerNumber);
-        const userWon = winners.some(winner => winner.user.id === user?.id);
-        
-        setLastSessionResults({
-          winningNumber: endedSession.winnerNumber,
-          winners: winners,
-          userWon: userWon,
-          totalPlayers: endedSession.players.length
-        });
-      } else if (session.winnerNumber) {
-        // Fallback to local state if backend fetch fails
-        const winners = session.players.filter(player => player.pick === session.winnerNumber);
-        const userWon = winners.some(winner => winner.user.id === user?.id);
-        
-        setLastSessionResults({
-          winningNumber: session.winnerNumber,
-          winners: winners,
-          userWon: userWon,
-          totalPlayers: session.players.length
-        });
-      } else {
-        // No winning number available
-        return;
-      }
-      
-      setShowResults(true);
-      
-      // Auto-hide after 10 seconds
-      setTimeout(() => {
-        setShowResults(false);
-        setLastSessionResults(null);
-      }, 10000);
-    } catch (error) {
-      console.error('Error fetching session results:', error);
-      // Fallback to local state if there's an error
-      if (session.winnerNumber) {
-        const winners = session.players.filter(player => player.pick === session.winnerNumber);
-        const userWon = winners.some(winner => winner.user.id === user?.id);
-        
-        setLastSessionResults({
-          winningNumber: session.winnerNumber,
-          winners: winners,
-          userWon: userWon,
-          totalPlayers: session.players.length
-        });
-        
-        setShowResults(true);
-        
-        // Auto-hide after 10 seconds
-        setTimeout(() => {
-          setShowResults(false);
-          setLastSessionResults(null);
-        }, 10000);
-      }
-    }
-  };
-
   const handleJoinGame = async () => {
     if (!canJoin || !currentSession) {
       showError('Cannot join session at this time');
@@ -307,10 +206,7 @@ const HomePage = () => {
       showInfo('Joining game session...');
       navigate('/game');
       
-      // Refresh session data after navigation
-      setTimeout(() => {
-        loadCurrentSession();
-      }, 100);
+      // Don't automatically refresh session data - let the game page handle it
     } catch (error) {
       console.error('Error joining game:', error);
       showError('Error joining game. Please try again.');
@@ -501,11 +397,22 @@ const HomePage = () => {
 
             {currentSession.status === 'ACTIVE' && currentSession.endsAt && (
               <div className="countdown">
-                Time Remaining: {Math.max(0, GameService.getSessionCountdown(currentSession))}s
+                Time Remaining: {Math.max(0, countdown)}s
               </div>
             )}
             
             <div className="session-actions">
+              {/* Manual refresh button */}
+              <button 
+                className="btn btn-outline btn-sm"
+                onClick={loadCurrentSession}
+                disabled={isLoading}
+                style={{ marginBottom: '10px' }}
+                title="Check for new sessions"
+              >
+                🔄 Refresh Session
+              </button>
+              
               {currentSession?.status === 'PENDING' && (
                 <button 
                   className="btn btn-primary btn-lg"
@@ -559,6 +466,17 @@ const HomePage = () => {
                   View Results
                 </button>
               )}
+              
+              {/* Optimized system info */}
+              <div style={{ 
+                fontSize: '0.8rem', 
+                color: '#666', 
+                marginTop: '10px', 
+                textAlign: 'center',
+                fontStyle: 'italic'
+              }}>
+                ⚡ Optimized: No polling - only checks results when countdown ends
+              </div>
             </div>
 
             {currentSession.players && currentSession.players.length > 0 && (

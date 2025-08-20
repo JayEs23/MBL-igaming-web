@@ -21,6 +21,7 @@ const HomePage = () => {
     winningNumber: number;
     winners: Array<{id: number; user: {id: number; fullName?: string; username: string}}>;
     userWon: boolean;
+    userPick: number | null;
     totalPlayers: number;
   } | null>(null);
   const [joinReason, setJoinReason] = useState<string>('');
@@ -127,10 +128,12 @@ const HomePage = () => {
         const winners = endedSession.players.filter(player => player.pick === endedSession.winnerNumber);
         const userWon = winners.some(winner => winner.user.id === user?.id);
         
+        const userPlayer = endedSession.players.find(player => player.user.id === user?.id);
         setLastSessionResults({
           winningNumber: endedSession.winnerNumber,
           winners: winners,
           userWon: userWon,
+          userPick: userPlayer?.pick || null,
           totalPlayers: endedSession.players.length
         });
         
@@ -272,11 +275,12 @@ const HomePage = () => {
         }}>
           <h3>🎉 Session Ended! 🎉</h3>
           <p><strong>Winning Number:</strong> {lastSessionResults.winningNumber}</p>
+          <p><strong>Your Pick:</strong> {lastSessionResults.userPick || 'None'}</p>
           <p><strong>Winners:</strong> {lastSessionResults.winners.length}</p>
           {lastSessionResults.userWon ? (
             <p style={{fontWeight: 'bold', fontSize: '1.2rem'}}>🏆 CONGRATULATIONS! You won! 🏆</p>
           ) : (
-            <p>Better luck next time!</p>
+            <p>Better luck next time! The winning number was {lastSessionResults.winningNumber}</p>
           )}
           <button 
             onClick={() => setShowResults(false)}

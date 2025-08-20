@@ -82,24 +82,26 @@ const GamePage = () => {
         // Use the actual ended session data from the backend
         const winners = endedSession.players.filter(player => player.pick === endedSession.winnerNumber);
         const userWon = winners.some(winner => winner.user.id === user?.id);
+        const userPlayer = endedSession.players.find(player => player.user.id === user?.id);
         
         setSessionResults({
           winningNumber: endedSession.winnerNumber,
           winners: winners,
           userWon: userWon,
-          userPick: selectedNumber,
+          userPick: userPlayer?.pick || null,
           totalPlayers: endedSession.players.length
         });
       } else {
         // Fallback to local state if backend fetch fails
         const winners = currentSession.players.filter(player => player.pick === currentSession.winnerNumber);
         const userWon = winners.some(winner => winner.user.id === user?.id);
+        const userPlayer = currentSession.players.find(player => player.user.id === user?.id);
         
         setSessionResults({
           winningNumber: currentSession.winnerNumber,
           winners: winners,
           userWon: userWon,
-          userPick: selectedNumber,
+          userPick: userPlayer?.pick || null,
           totalPlayers: currentSession.players.length
         });
       }
@@ -110,12 +112,13 @@ const GamePage = () => {
       // Fallback to local state if there's an error
       const winners = currentSession.players.filter(player => player.pick === currentSession.winnerNumber);
       const userWon = winners.some(winner => winner.user.id === user?.id);
+      const userPlayer = currentSession.players.find(player => player.user.id === user?.id);
       
       setSessionResults({
         winningNumber: currentSession.winnerNumber,
         winners: winners,
         userWon: userWon,
-        userPick: selectedNumber,
+        userPick: userPlayer?.pick || null,
         totalPlayers: currentSession.players.length
       });
       
